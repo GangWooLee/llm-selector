@@ -12,7 +12,7 @@ from app.utils.sse import format_sse
 router = APIRouter(tags=["advisor"])
 
 MAX_USER_INPUT_LENGTH = 2000
-DEFAULT_ANALYSIS_MODEL = "anthropic/claude-sonnet-4-20250514"
+DEFAULT_ANALYSIS_MODEL = "google/gemini-3-flash-preview"
 
 
 class AdviseRequest(BaseModel):

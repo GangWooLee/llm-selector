@@ -8,16 +8,14 @@ if [ -z "$file_path" ]; then
   exit 0
 fi
 
-# .env.example은 허용 (시크릿 아님)
-if echo "$file_path" | grep -qE '\.env\.example$'; then
-  exit 0
+# 정확한 .env 파일만 차단 (env.py 등은 허용)
+if echo "$file_path" | grep -qE '(/|^)\.env(\.local|\.production)?$'; then
+  echo "BLOCKED: Protected env file: $file_path"
+  exit 2
 fi
 
 # 보호 대상 패턴
 protected_patterns=(
-  ".env"
-  ".env.local"
-  ".env.production"
   "package-lock.json"
   "pnpm-lock.yaml"
   "bun.lock"

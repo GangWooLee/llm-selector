@@ -30,7 +30,7 @@ class ModelSummary(BaseModel):
     pricing_input: Decimal | None = None
     pricing_output: Decimal | None = None
     is_free: bool
-    modalities: list | None = None
+    modalities: dict | list | None = None
     supported_parameters: list | None = None
 
     model_config = {"from_attributes": True}
@@ -45,7 +45,7 @@ class ModelDetailResponse(BaseModel):
     context_length: int | None = None
     pricing_input: Decimal | None = None
     pricing_output: Decimal | None = None
-    modalities: list | None = None
+    modalities: dict | list | None = None
     supported_parameters: list | None = None
     max_completion_tokens: int | None = None
     architecture: dict | None = None
