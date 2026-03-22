@@ -46,9 +46,12 @@ advisor_agent = Agent(
     output_type=ComparisonReport,
     deps_type=AdvisorDeps,
     name="model_advisor",
-    model_settings=ModelSettings(timeout=AGENT_TIMEOUT_SECONDS),
+    model_settings=ModelSettings(
+        timeout=AGENT_TIMEOUT_SECONDS,
+        temperature=0.1,
+    ),
     defer_model_check=True,
-    retries=3,
+    retries=5,
 )
 
 
