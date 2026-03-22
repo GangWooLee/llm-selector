@@ -10,6 +10,8 @@ services:
           property: connectionString
       - key: ALLOWED_ORIGINS
         value: https://llm-selector.vercel.app
+      - key: ENVIRONMENT
+        value: production
       - key: TAVILY_API_KEY
         sync: false
 
