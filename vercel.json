@@ -2,11 +2,5 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/.next",
   "installCommand": "cd frontend && npm install",
-  "framework": "nextjs",
-  "functions": {
-    "api/index.py": {
-      "runtime": "@vercel/python",
-      "maxDuration": 300
-    }
-  }
+  "framework": "nextjs"
 }
