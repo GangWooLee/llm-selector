@@ -1,6 +1,6 @@
 import type { ComparisonReport } from "@/types/model";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export interface SSECallbacks {
   onThinking: (message: string) => void;

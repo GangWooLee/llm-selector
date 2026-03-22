@@ -1,7 +1,7 @@
 import type { PaginatedResponse, SyncResult } from "@/types/api";
 import type { ModelSummary, ModelDetail } from "@/types/model";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface FetchModelsParams {
   page?: number;
