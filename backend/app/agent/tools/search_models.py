@@ -1,7 +1,18 @@
+"""search_models — 요구사항 기반 모델 DB 검색."""
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import queries
 from app.utils.mappings import BUDGET_TO_MAX_PRICE, CONTEXT_NEED_TO_MIN_LENGTH
+
+# task_type별 관련성 높은 주요 제공사
+TASK_TYPE_PROVIDERS: dict[str, list[str]] = {
+    "chatbot": ["anthropic", "openai", "google", "meta-llama", "meta", "moonshotai", "z-ai", "cohere"],
+    "code_generation": ["anthropic", "openai", "google", "deepseek", "meta-llama", "meta"],
+    "analysis": ["anthropic", "openai", "google", "moonshotai"],
+    "creative": ["anthropic", "openai", "google", "meta-llama", "meta"],
+    "translation": ["anthropic", "google", "moonshotai", "cohere"],
+}
 
 
 async def search_models(
@@ -11,24 +22,31 @@ async def search_models(
     context_length_need: str,
     budget_range: str,
 ) -> list[dict]:
-    """요구사항 기반 모델 DB 검색.
+    """요구사항 기반 모델 DB 검색. 최신 모델 우선, 주요 제공사 필터링.
 
     Args:
         db: 데이터베이스 세션.
-        task_type: 용도 유형 (chatbot, code_generation, analysis, creative, translation 등).
-        required_capabilities: 필요 역량과 중요도 (예: {"coding": 4, "multilingual": 3}). 값은 0-5.
-        context_length_need: 필요 컨텍스트 길이 (short/medium/long/very_long).
+        task_type: 용도 유형 (chatbot, code_generation, analysis, creative, translation).
+        required_capabilities: 필요 역량 (예: {"coding": 4, "multilingual": 3}). 현재 참고용.
+        context_length_need: 필요 컨텍스트 (short/medium/long/very_long).
         budget_range: 예산 범위 (free/low/medium/high/unlimited).
 
     Returns:
-        조건에 맞는 모델 목록 (ID, 이름, 제공사, 가격, 컨텍스트 길이, 지원 기능).
+        최신순으로 정렬된 관련 모델 목록 (최대 20개).
     """
-    filters: dict = {}
+    filters: dict = {"sort_by": "updated_at"}
 
+    # task_type → 주요 제공사 필터
+    providers = TASK_TYPE_PROVIDERS.get(task_type, [])
+    if providers:
+        filters["providers"] = providers
+
+    # 컨텍스트 길이 필터
     min_context = CONTEXT_NEED_TO_MIN_LENGTH.get(context_length_need)
     if min_context:
         filters["min_context_length"] = min_context
 
+    # 예산 필터
     if budget_range == "free":
         filters["is_free"] = True
     else:
@@ -36,7 +54,7 @@ async def search_models(
         if max_price is not None:
             filters["max_pricing_input"] = max_price
 
-    models, _ = await queries.list_models(db, page=1, per_page=50, filters=filters)
+    models, _ = await queries.list_models(db, page=1, per_page=20, filters=filters)
 
     return [
         {

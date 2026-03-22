@@ -1,3 +1,5 @@
+"""compare_pricing — 모델 가격 비교 + 월 비용 시뮬레이션."""
+
 import uuid
 from decimal import Decimal
 
@@ -18,19 +20,31 @@ async def compare_pricing(
     estimated_monthly_input_tokens: int,
     estimated_monthly_output_tokens: int,
 ) -> list[dict]:
-    """후보 모델들의 가격 상세 비교 및 월 비용 시뮬레이션.
+    """후보 모델들의 가격 비교 + 월 비용 시뮬레이션.
 
     Args:
         db: 데이터베이스 세션.
-        model_ids: 비교할 모델 UUID 목록.
+        model_ids: 모델 UUID 또는 openrouter_id 목록 (둘 다 지원).
         estimated_monthly_input_tokens: 월 예상 입력 토큰 수.
         estimated_monthly_output_tokens: 월 예상 출력 토큰 수.
 
     Returns:
-        모델별 월 비용 시뮬레이션 (저/중/고 사용량 3단계).
+        모델별 월 비용 시뮬레이션 (저/중/고 3단계).
     """
-    uuids = [uuid.UUID(mid) for mid in model_ids]
-    models = await queries.get_model_pricing(db, uuids)
+    # UUID와 openrouter_id를 분리
+    uuid_ids = []
+    openrouter_ids = []
+    for mid in model_ids:
+        try:
+            uuid_ids.append(uuid.UUID(mid))
+        except ValueError:
+            openrouter_ids.append(mid)
+
+    models = []
+    if uuid_ids:
+        models.extend(await queries.get_model_pricing(db, uuid_ids))
+    if openrouter_ids:
+        models.extend(await queries.get_models_by_openrouter_ids(db, openrouter_ids))
 
     input_tokens = Decimal(str(estimated_monthly_input_tokens))
     output_tokens = Decimal(str(estimated_monthly_output_tokens))
@@ -48,6 +62,7 @@ async def compare_pricing(
 
         results.append({
             "model_id": str(m.id),
+            "openrouter_id": m.openrouter_id,
             "name": m.name,
             "pricing_input": str(price_in),
             "pricing_output": str(price_out),
