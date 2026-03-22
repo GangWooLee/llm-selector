@@ -1,38 +1,47 @@
 import uuid
 from decimal import Decimal
+from types import SimpleNamespace
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import queries
 from app.utils.mappings import BUDGET_TO_MAX_PRICE, CONTEXT_NEED_TO_MIN_LENGTH
 
+_NOT_FOUND = {"fit_score": 0, "strengths": [], "weaknesses": ["모델을 찾을 수 없습니다"]}
+
 
 async def assess_model_fit(
-    db: AsyncSession,
+    db: AsyncSession | None,
+    models_cache: list[dict] | None,
     model_id: str,
     user_requirements: dict,
 ) -> dict:
     """특정 모델이 사용자 용도에 얼마나 적합한지 평가.
 
     Args:
-        db: 데이터베이스 세션.
+        db: 데이터베이스 세션. None이면 No-DB 모드.
+        models_cache: No-DB 모드에서 사용할 모델 캐시 (OpenRouter API 데이터).
         model_id: 평가 대상 모델 UUID 또는 openrouter_id (둘 다 지원).
         user_requirements: 구조화된 요구사항. 예: {"capabilities": {"coding": 4}, "budget_range": "medium", "context_length_need": "long"}.
 
     Returns:
         fit_score (0-100), strengths 목록, weaknesses 목록.
     """
+    # No-DB 모드: 캐시에서 모델 조회
+    if db is None:
+        return _assess_from_cache(model_id, user_requirements, models_cache or [])
+
     try:
         model_uuid = uuid.UUID(model_id)
     except ValueError:
         model_obj = await queries.get_model_by_openrouter_id(db, model_id)
         if not model_obj:
-            return {"fit_score": 0, "strengths": [], "weaknesses": ["모델을 찾을 수 없습니다"]}
+            return {**_NOT_FOUND}
         model_uuid = model_obj.id
 
     model = await queries.get_model_with_details(db, model_uuid)
     if not model:
-        return {"fit_score": 0, "strengths": [], "weaknesses": ["모델을 찾을 수 없습니다"]}
+        return {**_NOT_FOUND}
 
     capabilities = user_requirements.get("capabilities", {})
     budget = user_requirements.get("budget_range", "unlimited")
@@ -124,3 +133,28 @@ def _calc_context_score(
         return int((ctx_len / min_ctx) * max_score)
     weaknesses.append("컨텍스트 길이 정보 없음")
     return int(max_score * 0.4)
+
+
+def _assess_from_cache(
+    model_id: str,
+    user_requirements: dict,
+    cache: list[dict],
+) -> dict:
+    """No-DB 모드: models_cache에서 모델을 찾아 적합도 평가."""
+    cached = next((m for m in cache if m["openrouter_id"] == model_id), None)
+    if not cached:
+        return {**_NOT_FOUND}
+
+    model = SimpleNamespace(**cached)
+    budget = user_requirements.get("budget_range", "unlimited")
+    ctx_need = user_requirements.get("context_length_need", "medium")
+
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+
+    # No-DB 모드에서는 태그 없음 → 가격 50 + 컨텍스트 50 = 100
+    price_score = _calc_price_score(model, budget, strengths, weaknesses, max_score=50)
+    ctx_score = _calc_context_score(model, ctx_need, strengths, weaknesses, max_score=50)
+    fit_score = min(100, price_score + ctx_score)
+
+    return {"fit_score": fit_score, "strengths": strengths, "weaknesses": weaknesses}

@@ -10,8 +10,6 @@ from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 from pydantic_ai.settings import ModelSettings
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.agent.prompts import SYSTEM_PROMPT
 from app.agent.schemas import ComparisonReport
 from app.agent.tools import search_models as _search_models
@@ -23,15 +21,16 @@ from app.agent.tools import get_model_details as _get_model_details
 
 logger = logging.getLogger(__name__)
 
-AGENT_TIMEOUT_SECONDS = 120
+AGENT_TIMEOUT_SECONDS = 55
 
 
 @dataclass
 class AdvisorDeps:
     """에이전트 실행 시 RunContext에 전달되는 의존성."""
 
-    db: AsyncSession
+    db: Any  # AsyncSession | None — No-DB 모드 시 None
     analysis_model: str
+    models_cache: list[dict] | None = None
 
 
 def _build_model(api_key: str, model_name: str) -> OpenAIModel:
@@ -67,7 +66,7 @@ async def search_models(
     budget_range: str,
 ) -> list[dict]:
     """요구사항 기반 모델 DB 검색. task_type: chatbot/code_generation/analysis/creative/translation. context_length_need: short/medium/long/very_long. budget_range: free/low/medium/high/unlimited."""
-    return await _search_models(ctx.deps.db, task_type, required_capabilities, context_length_need, budget_range)
+    return await _search_models(ctx.deps.db, ctx.deps.models_cache, task_type, required_capabilities, context_length_need, budget_range)
 
 
 @advisor_agent.tool
@@ -78,7 +77,7 @@ async def compare_pricing(
     estimated_monthly_output_tokens: int,
 ) -> list[dict]:
     """후보 모델들의 가격 비교 + 월 비용 시뮬레이션. model_ids: 비교할 모델 UUID 문자열 목록."""
-    return await _compare_pricing(ctx.deps.db, model_ids, estimated_monthly_input_tokens, estimated_monthly_output_tokens)
+    return await _compare_pricing(ctx.deps.db, ctx.deps.models_cache, model_ids, estimated_monthly_input_tokens, estimated_monthly_output_tokens)
 
 
 @advisor_agent.tool
@@ -88,7 +87,7 @@ async def get_benchmarks(
     benchmark_categories: list[str] | None = None,
 ) -> dict:
     """모델별 벤치마크 점수 조회. benchmark_categories: coding/reasoning/multilingual/math/creative."""
-    return await _get_benchmarks(ctx.deps.db, model_ids, benchmark_categories)
+    return await _get_benchmarks(ctx.deps.db, ctx.deps.models_cache, model_ids, benchmark_categories)
 
 
 @advisor_agent.tool
@@ -98,7 +97,7 @@ async def assess_model_fit(
     user_requirements: dict,
 ) -> dict:
     """특정 모델의 용도 적합도 평가. 0-100 점수 + 강점/약점 반환."""
-    return await _assess_model_fit(ctx.deps.db, model_id, user_requirements)
+    return await _assess_model_fit(ctx.deps.db, ctx.deps.models_cache, model_id, user_requirements)
 
 
 @advisor_agent.tool
@@ -116,7 +115,7 @@ async def get_model_details(
     model_id: str,
 ) -> dict:
     """모델 전체 상세 프로필 조회 (가격, 벤치마크, 태그 포함)."""
-    return await _get_model_details(ctx.deps.db, model_id)
+    return await _get_model_details(ctx.deps.db, ctx.deps.models_cache, model_id)
 
 
 # --- 에이전트 실행 ---
@@ -126,10 +125,11 @@ async def run_advisor(
     user_input: str,
     api_key: str,
     analysis_model: str,
-    db: AsyncSession,
+    db: Any,
+    models_cache: list[dict] | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """에이전트를 실행하고 SSE 이벤트를 yield하는 async generator."""
-    deps = AdvisorDeps(db=db, analysis_model=analysis_model)
+    deps = AdvisorDeps(db=db, analysis_model=analysis_model, models_cache=models_cache)
     model = _build_model(api_key, analysis_model)
 
     try:

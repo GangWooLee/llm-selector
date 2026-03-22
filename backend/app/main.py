@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.advise import router as advise_router
 from app.api.routes.models import router as models_router
-from app.api.routes.sync import router as sync_router
 from app.config import settings
 
 
@@ -24,11 +23,16 @@ def create_app() -> FastAPI:
 
     application.include_router(advise_router)
     application.include_router(models_router)
-    application.include_router(sync_router)
+
+    # sync_router는 DB 있을 때만 등록
+    if settings.DATABASE_URL:
+        from app.api.routes.sync import router as sync_router
+
+        application.include_router(sync_router)
 
     @application.get("/api/v1/health")
     async def health_check():
-        return {"status": "ok"}
+        return {"status": "ok", "mode": "db" if settings.DATABASE_URL else "no-db"}
 
     return application
 

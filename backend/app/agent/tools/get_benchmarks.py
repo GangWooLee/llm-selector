@@ -7,20 +7,26 @@ from app.db import queries
 
 
 async def get_benchmarks(
-    db: AsyncSession,
+    db: AsyncSession | None,
+    models_cache: list[dict] | None,
     model_ids: list[str],
     benchmark_categories: list[str] | None = None,
 ) -> dict[str, list[dict]]:
     """특정 모델들의 벤치마크 데이터 조회.
 
     Args:
-        db: 데이터베이스 세션.
+        db: 데이터베이스 세션. None이면 No-DB 모드.
+        models_cache: No-DB 모드에서 사용할 모델 캐시 (OpenRouter API 데이터).
         model_ids: 모델 UUID 또는 openrouter_id 목록 (둘 다 지원).
         benchmark_categories: 필터링할 벤치마크 카테고리 (coding, reasoning, multilingual, math, creative 등). None이면 전체.
 
     Returns:
         모델 ID별 벤치마크 점수 목록.
     """
+    # No-DB 모드: 벤치마크 데이터 없음 (DB에만 존재)
+    if db is None:
+        return {}
+
     uuid_ids = []
     openrouter_ids = []
     for mid in model_ids:
