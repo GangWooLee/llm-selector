@@ -8,7 +8,7 @@ from typing import Any
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.messages import ToolCallPart, ToolReturnPart
 from pydantic_ai.models.openai import OpenAIModel
-from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.providers.openrouter import OpenRouterProvider
 from pydantic_ai.settings import ModelSettings
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,6 @@ from app.agent.tools import get_model_details as _get_model_details
 
 logger = logging.getLogger(__name__)
 
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 AGENT_TIMEOUT_SECONDS = 120
 
 
@@ -36,11 +35,8 @@ class AdvisorDeps:
 
 
 def _build_model(api_key: str, model_name: str) -> OpenAIModel:
-    """OpenRouter 백엔드로 OpenAIModel 생성."""
-    provider = OpenAIProvider(
-        base_url=OPENROUTER_BASE_URL,
-        api_key=api_key,
-    )
+    """OpenRouter Provider로 모델 생성. model_profile 자동 매핑."""
+    provider = OpenRouterProvider(api_key=api_key)
     return OpenAIModel(model_name, provider=provider)
 
 

@@ -24,10 +24,10 @@ pytestmark = pytest.mark.asyncio
 def _make_model(**overrides):
     defaults = {
         "id": uuid.uuid4(),
-        "openrouter_id": "openai/gpt-4o",
-        "name": "GPT-4o",
+        "openrouter_id": "google/gemini-3-flash-preview",
+        "name": "Gemini 3 Flash",
         "provider": "openai",
-        "description": "Latest GPT-4o",
+        "description": "Latest Gemini 3 Flash",
         "context_length": 128000,
         "max_completion_tokens": 16384,
         "pricing_input": Decimal("0.0025"),
@@ -335,7 +335,7 @@ async def test_get_model_details_returns_full_profile():
         )
 
     assert result is not None
-    assert result["name"] == "GPT-4o"
+    assert result["name"] == "Gemini 3 Flash"
     assert result["provider"] == "openai"
     assert len(result["benchmarks"]) == 2
     assert len(result["tags"]) == 2

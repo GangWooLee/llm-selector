@@ -118,7 +118,7 @@ async def test_upsert_model_creates_new(db_session: AsyncSession):
 async def test_deactivate_missing_models(
     db_session: AsyncSession, sample_models: list[Model]
 ):
-    active_ids = ["openai/gpt-4o", "anthropic/claude-3.5-sonnet"]
+    active_ids = ["google/gemini-3-flash-preview", "moonshotai/kimi-k2.5"]
 
     deactivated = await deactivate_missing_models(db_session, active_ids)
 

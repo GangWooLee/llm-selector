@@ -88,10 +88,10 @@ async def db_session(engine) -> AsyncGenerator[AsyncSession, None]:
 async def sample_model(db_session: AsyncSession) -> Model:
     model = Model(
         id=_uuid(),
-        openrouter_id="openai/gpt-4o",
-        name="GPT-4o",
+        openrouter_id="google/gemini-3-flash-preview",
+        name="Gemini 3 Flash",
         provider="openai",
-        description="Latest GPT-4o model",
+        description="Latest Gemini 3 Flash model",
         context_length=128000,
         pricing_input=Decimal("0.0025"),
         pricing_output=Decimal("0.01"),
@@ -108,8 +108,8 @@ async def sample_models(db_session: AsyncSession) -> list[Model]:
     models_data = [
         Model(
             id=_uuid(),
-            openrouter_id="openai/gpt-4o",
-            name="GPT-4o",
+            openrouter_id="google/gemini-3-flash-preview",
+            name="Gemini 3 Flash",
             provider="openai",
             context_length=128000,
             pricing_input=Decimal("0.0025"),
@@ -119,8 +119,8 @@ async def sample_models(db_session: AsyncSession) -> list[Model]:
         ),
         Model(
             id=_uuid(),
-            openrouter_id="anthropic/claude-3.5-sonnet",
-            name="Claude 3.5 Sonnet",
+            openrouter_id="moonshotai/kimi-k2.5",
+            name="Kimi K2.5",
             provider="anthropic",
             context_length=200000,
             pricing_input=Decimal("0.003"),
@@ -130,8 +130,8 @@ async def sample_models(db_session: AsyncSession) -> list[Model]:
         ),
         Model(
             id=_uuid(),
-            openrouter_id="google/gemini-2.0-flash",
-            name="Gemini 2.0 Flash",
+            openrouter_id="z-ai/glm-5-turbo",
+            name="GLM 5 Turbo",
             provider="google",
             context_length=1000000,
             pricing_input=Decimal("0.0001"),
@@ -221,9 +221,9 @@ async def sample_tags(
 OPENROUTER_MOCK_RESPONSE = {
     "data": [
         {
-            "id": "openai/gpt-4o",
-            "name": "GPT-4o",
-            "description": "Latest GPT-4o",
+            "id": "google/gemini-3-flash-preview",
+            "name": "Gemini 3 Flash",
+            "description": "Latest Gemini 3 Flash",
             "context_length": 128000,
             "pricing": {
                 "prompt": "0.0025",
@@ -239,9 +239,9 @@ OPENROUTER_MOCK_RESPONSE = {
             "supported_parameters": ["temperature", "top_p"],
         },
         {
-            "id": "anthropic/claude-3.5-sonnet",
-            "name": "Claude 3.5 Sonnet",
-            "description": "Anthropic Claude 3.5 Sonnet",
+            "id": "moonshotai/kimi-k2.5",
+            "name": "Kimi K2.5",
+            "description": "Anthropic Kimi K2.5",
             "context_length": 200000,
             "pricing": {
                 "prompt": "0.003",
