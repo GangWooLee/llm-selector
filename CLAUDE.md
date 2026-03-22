@@ -103,7 +103,7 @@
 ## Project Status
 
 ### 현재 Phase
-> **Phase 3 — 대시보드 UI** 🔜 다음
+> **Phase 4 — 마무리 & 배포** 🔜 다음
 
 ### Phase 진행 상황
 | Phase | 내용 | 상태 |
@@ -111,8 +111,8 @@
 | Phase 0 | 기획 확정 + Claude Code 환경 세팅 | ✅ 완료 |
 | Phase 1 | 프로젝트 셋업 & 인프라 | ✅ 완료 |
 | Phase 2 | 에이전트 워크플로우 핵심 구현 | ✅ 완료 |
-| Phase 3 | 대시보드 UI (Day 9-11) | 🔜 다음 |
-| Phase 4 | 마무리 & 배포 (Day 12-14) | ⬜ 대기 |
+| Phase 3 | 대시보드 UI | ✅ 완료 |
+| Phase 4 | 마무리 & 배포 (Day 12-14) | 🔜 다음 |
 
 상세 체크리스트: `docs/06-dev-plan.md` 참조
 
@@ -138,18 +138,21 @@
 | Services | `app/services/openrouter.py`, `sync_service.py` | 동기화 |
 | Config | `app/config.py`, `main.py` | 설정 + 앱 |
 
-### Frontend (9 컴포넌트 + 2 페이지)
+### Frontend (25 컴포넌트 + 4 페이지)
 | 영역 | 파일 | 내용 |
 |------|------|------|
 | Component | `components/ApiKeyInput.tsx` | F1: API 키 관리 (5상태) |
-| Component | `components/layout/Header.tsx` | 사이트 헤더 |
+| Component | `components/layout/Header.tsx` | 사이트 헤더 + Advisor/Models 네비게이션 |
 | Advisor (7) | `components/advisor/*.tsx` | AdvisorForm, StreamingView, ComparisonDashboard, TopPickCard, ModelComparisonTable, ModelDetailCard, AgentReasoningPanel |
+| Models (11) | `components/models/*.tsx` | ModelsPageContent, ModelSearchBar, ModelFilters, ModelFilterSheet, ModelCard, ModelGrid, ModelPagination, EmptyState, ModelCardSkeleton, ModelProfileCard, PricingTable, BenchmarkTable, CapabilitiesList |
 | Page | `app/page.tsx` | 랜딩 페이지 |
 | Page | `app/advisor/page.tsx` | 어드바이저 페이지 (4상태) |
+| Page | `app/models/page.tsx` | 모델 탐색 (검색+필터+정렬+페이지네이션) |
+| Page | `app/models/[id]/page.tsx` | 모델 상세 (프로필+가격+벤치마크+기능) |
 | Lib | `lib/api.ts`, `lib/sse-client.ts` | API + SSE 클라이언트 |
 | Types | `types/model.ts`, `types/api.ts` | TypeScript 타입 |
 
-### Tests (105 total)
+### Tests (128 total)
 | 영역 | 파일 | 테스트 수 |
 |------|------|----------|
 | Backend DB | `tests/test_db/test_queries.py` | 10 |
@@ -163,12 +166,17 @@
 | Frontend | `lib/__tests__/sse-client.test.ts` | 17 |
 | Frontend | `components/advisor/__tests__/AdvisorForm.test.tsx` | 12 |
 | Frontend | `components/advisor/__tests__/ComparisonDashboard.test.tsx` | 16 |
+| Frontend | `components/models/__tests__/ModelCard.test.tsx` | 10 |
+| Frontend | `components/models/__tests__/ModelFilters.test.tsx` | 9 |
+| Frontend | `components/models/__tests__/ModelSearchBar.test.tsx` | 4 |
 
-### Design (4 문서)
+### Design (6 문서)
 | 파일 | 내용 |
 |------|------|
 | `docs/design/tokens/design-system.md` | 컬러, 타이포, 스페이싱 토큰 |
 | `docs/design/components/ApiKeyInput.md` | F1 컴포넌트 스펙 (5상태, 접근성) |
+| `docs/design/components/ModelCard.md` | 모델 카드 스펙 (4상태, hover, FREE 배지) |
+| `docs/design/components/ModelDetail.md` | 모델 상세 스펙 (5섹션, 빈 상태) |
 | `docs/design/layouts/advisor.md` | 어드바이저 페이지 와이어프레임 |
 | `docs/design/layouts/model-list.md` | 모델 탐색 페이지 와이어프레임 |
 
@@ -195,6 +203,12 @@
 7. **SSE 버퍼 경계**: 프론트엔드 ReadableStream에서 데이터가 여러 청크로 분할될 수 있음. 버퍼에 누적 후 `\n\n` 기준으로 파싱 필수.
 
 8. **에이전트 도구 병렬 개발**: prompt-engineer → agent-architect → tool-dev 순서가 이상적이지만, 파일 분리 덕분에 3명 동시 작업 가능. agent-architect만 schemas.py 의존성 알림 필요.
+
+### Lessons Learned (Phase 3)
+
+9. **Next.js Suspense + useSearchParams**: `useSearchParams()` 사용 시 정적 프리렌더링 실패. `<Suspense>` 경계로 감싸서 해결. `/models` 페이지에서 Server Component → Suspense → Client Component 패턴 사용.
+
+10. **Header 변경 시 기존 테스트 깨짐**: `heading` → `link`로 변경 후 `getByRole("heading")` 테스트 실패. 컴포넌트 구조 변경 시 관련 테스트도 즉시 확인 필요.
 
 ### OpenRouter API
 - 모델 목록: `GET https://openrouter.ai/api/v1/models`
