@@ -103,15 +103,15 @@
 ## Project Status
 
 ### 현재 Phase
-> **Phase 2 — 에이전트 워크플로우 핵심 구현** 🔜 다음
+> **Phase 3 — 대시보드 UI** 🔜 다음
 
 ### Phase 진행 상황
 | Phase | 내용 | 상태 |
 |-------|------|------|
 | Phase 0 | 기획 확정 + Claude Code 환경 세팅 | ✅ 완료 |
 | Phase 1 | 프로젝트 셋업 & 인프라 | ✅ 완료 |
-| Phase 2 | 에이전트 워크플로우 핵심 구현 (Day 4-8) | 🔜 다음 |
-| Phase 3 | 대시보드 UI (Day 9-11) | ⬜ 대기 |
+| Phase 2 | 에이전트 워크플로우 핵심 구현 | ✅ 완료 |
+| Phase 3 | 대시보드 UI (Day 9-11) | 🔜 다음 |
 | Phase 4 | 마무리 & 배포 (Day 12-14) | ⬜ 대기 |
 
 상세 체크리스트: `docs/06-dev-plan.md` 참조
@@ -120,40 +120,49 @@
 
 ## Codebase Inventory
 
-### Backend (12 modules)
+### Backend (23 modules)
 | 영역 | 파일 | 내용 |
 |------|------|------|
-| DB Models | `app/db/models.py` | Model, ModelBenchmark, ModelTag (3 테이블) |
-| DB Session | `app/db/session.py` | async engine + sessionmaker |
-| DB Queries | `app/db/queries.py` | 6개 쿼리 함수 |
+| Agent | `app/agent/advisor.py` | ModelAdvisorAgent + run_advisor() |
+| Agent | `app/agent/prompts.py` | 시스템 프롬프트 (4원칙) |
+| Agent | `app/agent/schemas.py` | ComparisonReport + 관련 모델 |
+| Tools (6) | `app/agent/tools/*.py` | search_models, compare_pricing, get_benchmarks, assess_model_fit, web_search, get_model_details |
+| API Routes | `app/api/routes/advise.py` | POST /advise (SSE) |
 | API Routes | `app/api/routes/models.py` | GET /models, GET /models/{id} |
 | API Routes | `app/api/routes/sync.py` | POST /sync |
+| Utils | `app/utils/sse.py` | format_sse 헬퍼 |
 | Schemas | `app/schemas/model.py` | 7개 Pydantic 모델 |
 | Schemas | `app/schemas/sync.py` | SyncResponse |
-| Services | `app/services/openrouter.py` | OpenRouter API 클라이언트 + 필드 매핑 |
-| Services | `app/services/sync_service.py` | DB 동기화 오케스트레이션 |
-| Config | `app/config.py` | pydantic-settings |
-| App | `app/main.py` | FastAPI 앱 + CORS + 라우터 |
-| Migration | `alembic/versions/c2ac3ba0363d_initial_tables.py` | 3 테이블 초기 마이그레이션 |
+| DB | `app/db/models.py` | 3 테이블 SQLAlchemy |
+| DB | `app/db/session.py`, `queries.py` | 세션 + 6개 쿼리 |
+| Services | `app/services/openrouter.py`, `sync_service.py` | 동기화 |
+| Config | `app/config.py`, `main.py` | 설정 + 앱 |
 
-### Frontend (4 컴포넌트 + 2 페이지)
+### Frontend (9 컴포넌트 + 2 페이지)
 | 영역 | 파일 | 내용 |
 |------|------|------|
 | Component | `components/ApiKeyInput.tsx` | F1: API 키 관리 (5상태) |
 | Component | `components/layout/Header.tsx` | 사이트 헤더 |
+| Advisor (7) | `components/advisor/*.tsx` | AdvisorForm, StreamingView, ComparisonDashboard, TopPickCard, ModelComparisonTable, ModelDetailCard, AgentReasoningPanel |
 | Page | `app/page.tsx` | 랜딩 페이지 |
-| API Route | `app/api/validate-key/route.ts` | OpenRouter 키 검증 프록시 |
-| Lib | `lib/api.ts` | 백엔드 API 클라이언트 |
+| Page | `app/advisor/page.tsx` | 어드바이저 페이지 (4상태) |
+| Lib | `lib/api.ts`, `lib/sse-client.ts` | API + SSE 클라이언트 |
 | Types | `types/model.ts`, `types/api.ts` | TypeScript 타입 |
 
-### Tests (36 total)
+### Tests (105 total)
 | 영역 | 파일 | 테스트 수 |
 |------|------|----------|
 | Backend DB | `tests/test_db/test_queries.py` | 10 |
 | Backend API | `tests/test_api/test_models.py` | 4 |
+| Backend API | `tests/test_api/test_advise.py` | 3 |
 | Backend Sync | `tests/test_services/test_sync.py` | 4 |
+| Backend Agent | `tests/test_agent/test_tools.py` | 14 |
+| Backend Agent | `tests/test_agent/test_advisor.py` | 3 |
 | Frontend | `components/__tests__/ApiKeyInput.test.tsx` | 16 |
 | Frontend | `components/__tests__/Header.test.tsx` | 2 |
+| Frontend | `lib/__tests__/sse-client.test.ts` | 17 |
+| Frontend | `components/advisor/__tests__/AdvisorForm.test.tsx` | 12 |
+| Frontend | `components/advisor/__tests__/ComparisonDashboard.test.tsx` | 16 |
 
 ### Design (4 문서)
 | 파일 | 내용 |
@@ -176,6 +185,16 @@
 3. **Agent Team 파일 소유권**: 독점 파일 경계가 명확할수록 병렬 작업 효율 극대화. 7명 에이전트가 충돌 0건으로 동시 작업 완료.
 
 4. **OpenRouter 가격 정밀도**: `pricing.prompt`가 문자열("0.000015")로 반환됨. `Decimal(str)` 변환 필수, `float()` 사용 시 서브센트 손실.
+
+### Lessons Learned (Phase 2)
+
+5. **Pydantic AI OpenRouter 연동**: `OpenAIModel` + `OpenAIProvider(base_url="https://openrouter.ai/api/v1")` 패턴. 모델명은 OpenRouter ID 그대로 ("anthropic/claude-sonnet-4-20250514").
+
+6. **SQLite UUID 호환 테스트**: 도구 함수가 `uuid.UUID()` 변환할 때 SQLite String(36) 컬럼과 불일치. 도구 테스트에서는 queries 레이어를 모킹하여 해결.
+
+7. **SSE 버퍼 경계**: 프론트엔드 ReadableStream에서 데이터가 여러 청크로 분할될 수 있음. 버퍼에 누적 후 `\n\n` 기준으로 파싱 필수.
+
+8. **에이전트 도구 병렬 개발**: prompt-engineer → agent-architect → tool-dev 순서가 이상적이지만, 파일 분리 덕분에 3명 동시 작업 가능. agent-architect만 schemas.py 의존성 알림 필요.
 
 ### OpenRouter API
 - 모델 목록: `GET https://openrouter.ai/api/v1/models`
