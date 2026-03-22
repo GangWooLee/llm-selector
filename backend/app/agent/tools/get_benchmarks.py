@@ -15,15 +15,29 @@ async def get_benchmarks(
 
     Args:
         db: 데이터베이스 세션.
-        model_ids: 대상 모델 UUID 목록.
+        model_ids: 모델 UUID 또는 openrouter_id 목록 (둘 다 지원).
         benchmark_categories: 필터링할 벤치마크 카테고리 (coding, reasoning, multilingual, math, creative 등). None이면 전체.
 
     Returns:
         모델 ID별 벤치마크 점수 목록.
     """
-    uuids = [uuid.UUID(mid) for mid in model_ids]
+    uuid_ids = []
+    openrouter_ids = []
+    for mid in model_ids:
+        try:
+            uuid_ids.append(uuid.UUID(mid))
+        except ValueError:
+            openrouter_ids.append(mid)
+
+    if openrouter_ids:
+        models = await queries.get_models_by_openrouter_ids(db, openrouter_ids)
+        uuid_ids.extend([m.id for m in models])
+
+    if not uuid_ids:
+        return {}
+
     benchmarks = await queries.get_model_benchmarks(
-        db, uuids, categories=benchmark_categories
+        db, uuid_ids, categories=benchmark_categories
     )
 
     grouped: dict[str, list[dict]] = defaultdict(list)

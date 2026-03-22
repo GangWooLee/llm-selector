@@ -13,12 +13,20 @@ async def get_model_details(
 
     Args:
         db: 데이터베이스 세션.
-        model_id: 대상 모델 UUID.
+        model_id: 대상 모델 UUID 또는 openrouter_id (둘 다 지원).
 
     Returns:
         모델 전체 프로필. 모델이 없으면 None.
     """
-    model = await queries.get_model_with_details(db, uuid.UUID(model_id))
+    try:
+        model_uuid = uuid.UUID(model_id)
+    except ValueError:
+        model_obj = await queries.get_model_by_openrouter_id(db, model_id)
+        if not model_obj:
+            return None
+        model_uuid = model_obj.id
+
+    model = await queries.get_model_with_details(db, model_uuid)
     if not model:
         return None
 

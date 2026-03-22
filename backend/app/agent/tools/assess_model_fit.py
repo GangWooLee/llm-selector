@@ -16,13 +16,21 @@ async def assess_model_fit(
 
     Args:
         db: 데이터베이스 세션.
-        model_id: 평가 대상 모델 UUID.
+        model_id: 평가 대상 모델 UUID 또는 openrouter_id (둘 다 지원).
         user_requirements: 구조화된 요구사항. 예: {"capabilities": {"coding": 4}, "budget_range": "medium", "context_length_need": "long"}.
 
     Returns:
         fit_score (0-100), strengths 목록, weaknesses 목록.
     """
-    model = await queries.get_model_with_details(db, uuid.UUID(model_id))
+    try:
+        model_uuid = uuid.UUID(model_id)
+    except ValueError:
+        model_obj = await queries.get_model_by_openrouter_id(db, model_id)
+        if not model_obj:
+            return {"fit_score": 0, "strengths": [], "weaknesses": ["모델을 찾을 수 없습니다"]}
+        model_uuid = model_obj.id
+
+    model = await queries.get_model_with_details(db, model_uuid)
     if not model:
         return {"fit_score": 0, "strengths": [], "weaknesses": ["모델을 찾을 수 없습니다"]}
 
