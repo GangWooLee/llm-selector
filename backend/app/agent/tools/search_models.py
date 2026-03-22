@@ -1,23 +1,7 @@
-from decimal import Decimal
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import queries
-
-BUDGET_TO_MAX_PRICE: dict[str, Decimal | None] = {
-    "free": Decimal("0"),
-    "low": Decimal("0.001"),
-    "medium": Decimal("0.01"),
-    "high": Decimal("0.1"),
-    "unlimited": None,
-}
-
-CONTEXT_NEED_TO_MIN_LENGTH: dict[str, int] = {
-    "short": 4096,
-    "medium": 32000,
-    "long": 128000,
-    "very_long": 200000,
-}
+from app.utils.mappings import BUDGET_TO_MAX_PRICE, CONTEXT_NEED_TO_MIN_LENGTH
 
 
 async def search_models(
