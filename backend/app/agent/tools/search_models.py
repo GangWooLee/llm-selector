@@ -7,11 +7,11 @@ from app.utils.mappings import BUDGET_TO_MAX_PRICE, CONTEXT_NEED_TO_MIN_LENGTH
 
 # task_type별 관련성 높은 주요 제공사
 TASK_TYPE_PROVIDERS: dict[str, list[str]] = {
-    "chatbot": ["anthropic", "openai", "google", "meta-llama", "meta", "moonshotai", "z-ai", "cohere"],
-    "code_generation": ["anthropic", "openai", "google", "deepseek", "meta-llama", "meta"],
-    "analysis": ["anthropic", "openai", "google", "moonshotai"],
-    "creative": ["anthropic", "openai", "google", "meta-llama", "meta"],
-    "translation": ["anthropic", "google", "moonshotai", "cohere"],
+    "chatbot": ["anthropic", "openai", "google", "moonshotai", "z-ai", "qwen", "deepseek", "meta-llama", "meta", "minimax", "cohere"],
+    "code_generation": ["anthropic", "openai", "google", "deepseek", "qwen", "z-ai", "moonshotai", "meta-llama", "meta"],
+    "analysis": ["anthropic", "openai", "google", "moonshotai", "qwen", "deepseek", "z-ai"],
+    "creative": ["anthropic", "openai", "google", "qwen", "moonshotai", "meta-llama", "meta"],
+    "translation": ["anthropic", "google", "moonshotai", "qwen", "deepseek", "cohere"],
 }
 
 
