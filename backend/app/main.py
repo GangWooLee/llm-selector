@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.advise import router as advise_router
 from app.api.routes.models import router as models_router
 from app.api.routes.sync import router as sync_router
 from app.config import settings
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    application.include_router(advise_router)
     application.include_router(models_router)
     application.include_router(sync_router)
 
