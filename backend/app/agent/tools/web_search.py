@@ -17,17 +17,20 @@ async def web_search(search_query: str) -> list[dict]:
     if not settings.TAVILY_API_KEY:
         return []
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        response = await client.post(
-            TAVILY_SEARCH_URL,
-            json={
-                "api_key": settings.TAVILY_API_KEY,
-                "query": search_query,
-                "max_results": 5,
-            },
-        )
-        response.raise_for_status()
-        data = response.json()
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(
+                TAVILY_SEARCH_URL,
+                json={
+                    "api_key": settings.TAVILY_API_KEY,
+                    "query": search_query,
+                    "max_results": 5,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+    except (httpx.HTTPStatusError, httpx.TimeoutException):
+        return [{"title": "Web search unavailable", "url": "", "content": "웹 검색을 사용할 수 없습니다."}]
 
     return [
         {
