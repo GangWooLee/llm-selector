@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: llm-selector-api
+    runtime: docker
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: llm-selector-db
+          property: connectionString
+      - key: ALLOWED_ORIGINS
+        value: https://llm-selector.vercel.app
+      - key: TAVILY_API_KEY
+        sync: false
+
+databases:
+  - name: llm-selector-db
+    plan: free
+    databaseName: llm_selector
