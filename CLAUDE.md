@@ -103,14 +103,14 @@
 ## Project Status
 
 ### 현재 Phase
-> **Phase 0 — 기획 확정 & 환경 세팅** ✅ 완료
+> **Phase 2 — 에이전트 워크플로우 핵심 구현** 🔜 다음
 
 ### Phase 진행 상황
 | Phase | 내용 | 상태 |
 |-------|------|------|
 | Phase 0 | 기획 확정 + Claude Code 환경 세팅 | ✅ 완료 |
-| Phase 1 | 프로젝트 셋업 & 인프라 (Day 1-3) | ⬜ 대기 |
-| Phase 2 | 에이전트 워크플로우 핵심 구현 (Day 4-8) | ⬜ 대기 |
+| Phase 1 | 프로젝트 셋업 & 인프라 | ✅ 완료 |
+| Phase 2 | 에이전트 워크플로우 핵심 구현 (Day 4-8) | 🔜 다음 |
 | Phase 3 | 대시보드 UI (Day 9-11) | ⬜ 대기 |
 | Phase 4 | 마무리 & 배포 (Day 12-14) | ⬜ 대기 |
 
@@ -118,7 +118,64 @@
 
 ---
 
+## Codebase Inventory
+
+### Backend (12 modules)
+| 영역 | 파일 | 내용 |
+|------|------|------|
+| DB Models | `app/db/models.py` | Model, ModelBenchmark, ModelTag (3 테이블) |
+| DB Session | `app/db/session.py` | async engine + sessionmaker |
+| DB Queries | `app/db/queries.py` | 6개 쿼리 함수 |
+| API Routes | `app/api/routes/models.py` | GET /models, GET /models/{id} |
+| API Routes | `app/api/routes/sync.py` | POST /sync |
+| Schemas | `app/schemas/model.py` | 7개 Pydantic 모델 |
+| Schemas | `app/schemas/sync.py` | SyncResponse |
+| Services | `app/services/openrouter.py` | OpenRouter API 클라이언트 + 필드 매핑 |
+| Services | `app/services/sync_service.py` | DB 동기화 오케스트레이션 |
+| Config | `app/config.py` | pydantic-settings |
+| App | `app/main.py` | FastAPI 앱 + CORS + 라우터 |
+| Migration | `alembic/versions/c2ac3ba0363d_initial_tables.py` | 3 테이블 초기 마이그레이션 |
+
+### Frontend (4 컴포넌트 + 2 페이지)
+| 영역 | 파일 | 내용 |
+|------|------|------|
+| Component | `components/ApiKeyInput.tsx` | F1: API 키 관리 (5상태) |
+| Component | `components/layout/Header.tsx` | 사이트 헤더 |
+| Page | `app/page.tsx` | 랜딩 페이지 |
+| API Route | `app/api/validate-key/route.ts` | OpenRouter 키 검증 프록시 |
+| Lib | `lib/api.ts` | 백엔드 API 클라이언트 |
+| Types | `types/model.ts`, `types/api.ts` | TypeScript 타입 |
+
+### Tests (36 total)
+| 영역 | 파일 | 테스트 수 |
+|------|------|----------|
+| Backend DB | `tests/test_db/test_queries.py` | 10 |
+| Backend API | `tests/test_api/test_models.py` | 4 |
+| Backend Sync | `tests/test_services/test_sync.py` | 4 |
+| Frontend | `components/__tests__/ApiKeyInput.test.tsx` | 16 |
+| Frontend | `components/__tests__/Header.test.tsx` | 2 |
+
+### Design (4 문서)
+| 파일 | 내용 |
+|------|------|
+| `docs/design/tokens/design-system.md` | 컬러, 타이포, 스페이싱 토큰 |
+| `docs/design/components/ApiKeyInput.md` | F1 컴포넌트 스펙 (5상태, 접근성) |
+| `docs/design/layouts/advisor.md` | 어드바이저 페이지 와이어프레임 |
+| `docs/design/layouts/model-list.md` | 모델 탐색 페이지 와이어프레임 |
+
+---
+
 ## Project-Specific Notes
+
+### Lessons Learned (Phase 1)
+
+1. **SQLite JSONB 호환**: 테스트에서 SQLite 사용 시 `JSON` 타입 폴백 필요. conftest.py에서 event listener로 `engine.connect` 시 `pragma` 설정.
+
+2. **Next.js Google Fonts**: 오프라인/샌드박스 환경에서 `next/font/google` fetch 실패. `next/font/local` 또는 Tailwind 기본 폰트로 대체.
+
+3. **Agent Team 파일 소유권**: 독점 파일 경계가 명확할수록 병렬 작업 효율 극대화. 7명 에이전트가 충돌 0건으로 동시 작업 완료.
+
+4. **OpenRouter 가격 정밀도**: `pricing.prompt`가 문자열("0.000015")로 반환됨. `Decimal(str)` 변환 필수, `float()` 사용 시 서브센트 손실.
 
 ### OpenRouter API
 - 모델 목록: `GET https://openrouter.ai/api/v1/models`
