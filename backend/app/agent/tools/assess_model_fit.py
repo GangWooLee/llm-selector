@@ -33,15 +33,19 @@ async def assess_model_fit(
     strengths: list[str] = []
     weaknesses: list[str] = []
 
-    # Tag matching score (0-50)
     tag_map = {t.category: t.strength_level for t in model.tags}
-    tag_score = _calc_tag_score(capabilities, tag_map, strengths, weaknesses)
+    has_tags = bool(tag_map and capabilities)
 
-    # Price fit score (0-25)
-    price_score = _calc_price_score(model, budget, strengths, weaknesses)
-
-    # Context length fit score (0-25)
-    ctx_score = _calc_context_score(model, ctx_need, strengths, weaknesses)
+    if has_tags:
+        # 태그 있을 때: 태그 50 + 가격 25 + 컨텍스트 25 = 100
+        tag_score = _calc_tag_score(capabilities, tag_map, strengths, weaknesses, max_score=50)
+        price_score = _calc_price_score(model, budget, strengths, weaknesses, max_score=25)
+        ctx_score = _calc_context_score(model, ctx_need, strengths, weaknesses, max_score=25)
+    else:
+        # 태그 없을 때: 가격 50 + 컨텍스트 50 = 100
+        tag_score = 0
+        price_score = _calc_price_score(model, budget, strengths, weaknesses, max_score=50)
+        ctx_score = _calc_context_score(model, ctx_need, strengths, weaknesses, max_score=50)
 
     fit_score = min(100, tag_score + price_score + ctx_score)
 
@@ -49,10 +53,15 @@ async def assess_model_fit(
 
 
 def _calc_tag_score(
-    capabilities: dict, tag_map: dict, strengths: list, weaknesses: list
+    capabilities: dict,
+    tag_map: dict,
+    strengths: list,
+    weaknesses: list,
+    *,
+    max_score: int = 50,
 ) -> int:
     if not capabilities:
-        return 25
+        return max_score // 2
     total, matched = 0, 0
     for cap, importance in capabilities.items():
         total += importance
@@ -64,36 +73,46 @@ def _calc_tag_score(
             weaknesses.append(f"{cap} 역량 부족 ({level}/5, 요구 {importance}/5)")
         else:
             weaknesses.append(f"{cap} 역량 데이터 없음")
-    return int((matched / max(total, 1)) * 50)
+    return int((matched / max(total, 1)) * max_score)
 
 
 def _calc_price_score(
-    model: object, budget: str, strengths: list, weaknesses: list
+    model: object,
+    budget: str,
+    strengths: list,
+    weaknesses: list,
+    *,
+    max_score: int = 25,
 ) -> int:
     max_price = BUDGET_TO_MAX_PRICE.get(budget)
     price = getattr(model, "pricing_input", None) or Decimal("0")
     if getattr(model, "is_free", False):
         strengths.append("무료 모델")
-        return 25
+        return max_score
     if max_price is None:
-        return 20
+        return int(max_score * 0.8)
     if price <= max_price:
         strengths.append(f"예산 범위 내 (${price}/token)")
-        return 25
+        return max_score
     weaknesses.append(f"예산 초과 (${price}/token, 한도 ${max_price})")
-    return 5
+    return int(max_score * 0.2)
 
 
 def _calc_context_score(
-    model: object, ctx_need: str, strengths: list, weaknesses: list
+    model: object,
+    ctx_need: str,
+    strengths: list,
+    weaknesses: list,
+    *,
+    max_score: int = 25,
 ) -> int:
     min_ctx = CONTEXT_NEED_TO_MIN_LENGTH.get(ctx_need, 32000)
     ctx_len = getattr(model, "context_length", None) or 0
     if ctx_len >= min_ctx:
         strengths.append(f"컨텍스트 길이 충분 ({ctx_len:,} tokens)")
-        return 25
+        return max_score
     if ctx_len > 0:
         weaknesses.append(f"컨텍스트 길이 부족 ({ctx_len:,}, 필요 {min_ctx:,})")
-        return int((ctx_len / min_ctx) * 25)
+        return int((ctx_len / min_ctx) * max_score)
     weaknesses.append("컨텍스트 길이 정보 없음")
-    return 10
+    return int(max_score * 0.4)

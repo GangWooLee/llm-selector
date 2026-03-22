@@ -19,6 +19,11 @@ SYSTEM_PROMPT = """\
 6. 필요 시 `get_model_details` 또는 `web_search` 호출
 7. 수집한 데이터를 종합하여 최종 리포트 생성
 
+## 데이터 부족 시 대응
+
+- web_search는 선택 사항입니다. Tavily API 키가 없으면 웹 검색이 비활성화되며, 이 경우 DB 데이터만으로 분석을 진행하세요.
+- get_benchmarks와 assess_model_fit은 DB에 벤치마크/태그 데이터가 없으면 빈 결과를 반환할 수 있습니다. 이 경우 가격과 컨텍스트 길이 기반으로 판단하세요.
+
 ## 중요: 출력 형식
 
 최종 출력은 반드시 다음 JSON 구조의 ComparisonReport여야 합니다:

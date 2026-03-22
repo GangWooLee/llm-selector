@@ -15,7 +15,7 @@ async def web_search(search_query: str) -> list[dict]:
         관련 검색 결과 목록 (URL + 핵심 내용).
     """
     if not settings.TAVILY_API_KEY:
-        return []
+        return [{"title": "Web search disabled", "url": "", "content": "TAVILY_API_KEY가 설정되지 않아 웹 검색을 건너뜁니다. DB 데이터로 분석을 계속합니다."}]
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:

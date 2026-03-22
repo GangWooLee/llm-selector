@@ -298,12 +298,13 @@ async def test_web_search_returns_results_on_success():
     assert results[0]["url"] == "https://example.com"
 
 
-async def test_web_search_returns_empty_without_api_key():
+async def test_web_search_returns_disabled_message_without_api_key():
     with patch("app.agent.tools.web_search.settings") as mock_settings:
         mock_settings.TAVILY_API_KEY = ""
         results = await web_search("test query")
 
-    assert results == []
+    assert len(results) == 1
+    assert results[0]["title"] == "Web search disabled"
 
 
 # ---------- get_model_details ----------

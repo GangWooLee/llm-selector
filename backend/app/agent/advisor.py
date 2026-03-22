@@ -76,7 +76,7 @@ async def compare_pricing(
     model_ids: list[str],
     estimated_monthly_input_tokens: int,
     estimated_monthly_output_tokens: int,
-) -> dict:
+) -> list[dict]:
     """후보 모델들의 가격 비교 + 월 비용 시뮬레이션. model_ids: 비교할 모델 UUID 문자열 목록."""
     return await _compare_pricing(ctx.deps.db, model_ids, estimated_monthly_input_tokens, estimated_monthly_output_tokens)
 
@@ -85,7 +85,7 @@ async def compare_pricing(
 async def get_benchmarks(
     ctx: RunContext[AdvisorDeps],
     model_ids: list[str],
-    benchmark_categories: list[str],
+    benchmark_categories: list[str] | None = None,
 ) -> dict:
     """모델별 벤치마크 점수 조회. benchmark_categories: coding/reasoning/multilingual/math/creative."""
     return await _get_benchmarks(ctx.deps.db, model_ids, benchmark_categories)
