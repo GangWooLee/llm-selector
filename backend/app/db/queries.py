@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,13 +17,13 @@ async def list_models(
 ) -> tuple[list[Model], int]:
     """페이징+필터+정렬로 모델 목록 조회. (models, total_count) 반환."""
     query = select(Model).where(Model.is_active.is_(True))
-    count_query = select(Model.id).where(Model.is_active.is_(True))
+    count_query = select(func.count(Model.id)).where(Model.is_active.is_(True))
 
     if filters:
         query = _apply_filters(query, filters)
         count_query = _apply_filters(count_query, filters)
 
-    total = len((await db.execute(count_query)).all())
+    total = (await db.execute(count_query)).scalar_one()
     offset = (page - 1) * per_page
     query = query.order_by(Model.name).offset(offset).limit(per_page)
     result = await db.execute(query)
