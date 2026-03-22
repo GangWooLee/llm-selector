@@ -24,7 +24,7 @@ async def list_models(
     min_context: int | None = Query(default=None),
     max_price_input: float | None = Query(default=None),
     is_free: bool | None = Query(default=None),
-    search: str | None = Query(default=None),
+    search: str | None = Query(default=None, max_length=500),
     sort_by: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> ModelListResponse:

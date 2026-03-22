@@ -26,7 +26,6 @@ class AdvisorDeps:
     """에이전트 실행 시 RunContext에 전달되는 의존성."""
 
     db: AsyncSession
-    api_key: str
     analysis_model: str
 
 
@@ -61,7 +60,7 @@ async def run_advisor(
 
     이벤트 타입: thinking, tool_call, tool_result, report, done, error
     """
-    deps = AdvisorDeps(db=db, api_key=api_key, analysis_model=analysis_model)
+    deps = AdvisorDeps(db=db, analysis_model=analysis_model)
     model = _build_model(api_key, analysis_model)
 
     try:
